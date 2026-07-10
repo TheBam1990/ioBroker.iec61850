@@ -1,0 +1,485 @@
+{
+  "type": "tabs",
+  "items": {
+    "main": {
+      "type": "panel",
+      "label": {
+        "en": "General",
+        "de": "Allgemein"
+      },
+      "items": {
+        "enabled": {
+          "type": "checkbox",
+          "label": {
+            "en": "Enable adapter",
+            "de": "Adapter aktivieren"
+          },
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "role": {
+          "type": "select",
+          "label": {
+            "en": "Role",
+            "de": "Rolle"
+          },
+          "options": [
+            {
+              "label": "Client",
+              "value": "client"
+            },
+            {
+              "label": "Server",
+              "value": "server"
+            },
+            {
+              "label": "Client + Server",
+              "value": "both"
+            }
+          ],
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "serviceMms": {
+          "type": "checkbox",
+          "label": {
+            "en": "MMS",
+            "de": "MMS"
+          },
+          "xs": 12,
+          "sm": 3,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
+        },
+        "serviceReports": {
+          "type": "checkbox",
+          "label": {
+            "en": "Reports",
+            "de": "Reports"
+          },
+          "xs": 12,
+          "sm": 3,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
+        },
+        "serviceGoose": {
+          "type": "checkbox",
+          "label": {
+            "en": "GOOSE",
+            "de": "GOOSE"
+          },
+          "help": {
+            "en": "GOOSE requires raw Ethernet access and a native IEC 61850 backend.",
+            "de": "GOOSE benoetigt Raw-Ethernet-Zugriff und ein natives IEC-61850-Backend."
+          },
+          "xs": 12,
+          "sm": 3,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
+        },
+        "serviceSampledValues": {
+          "type": "checkbox",
+          "label": {
+            "en": "Sampled Values",
+            "de": "Sampled Values"
+          },
+          "help": {
+            "en": "Sampled Values require raw Ethernet access and a native IEC 61850 backend.",
+            "de": "Sampled Values benoetigen Raw-Ethernet-Zugriff und ein natives IEC-61850-Backend."
+          },
+          "xs": 12,
+          "sm": 3,
+          "md": 3,
+          "lg": 3,
+          "xl": 3
+        },
+        "pollIntervalMs": {
+          "type": "number",
+          "label": {
+            "en": "Status interval ms",
+            "de": "Statusintervall ms"
+          },
+          "min": 1000,
+          "max": 3600000,
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        }
+      }
+    },
+    "mms": {
+      "type": "panel",
+      "label": {
+        "en": "MMS",
+        "de": "MMS"
+      },
+      "items": {
+        "mmsHost": {
+          "type": "text",
+          "label": {
+            "en": "MMS server host",
+            "de": "MMS-Server Host"
+          },
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "mmsPort": {
+          "type": "number",
+          "label": {
+            "en": "MMS server port",
+            "de": "MMS-Server Port"
+          },
+          "help": {
+            "en": "IEC 61850 MMS normally uses TCP port 102.",
+            "de": "IEC 61850 MMS nutzt normalerweise TCP-Port 102."
+          },
+          "min": 1,
+          "max": 65535,
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "mmsBind": {
+          "type": "text",
+          "label": {
+            "en": "Server bind address",
+            "de": "Server Bind-Adresse"
+          },
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "mmsServerPort": {
+          "type": "number",
+          "label": {
+            "en": "Local server port",
+            "de": "Lokaler Server-Port"
+          },
+          "help": {
+            "en": "Use 102 for real MMS server mode if the ioBroker process is allowed to bind privileged ports. 8102 is useful for tests.",
+            "de": "Fuer echten MMS-Serverbetrieb Port 102 nutzen, wenn ioBroker privilegierte Ports binden darf. 8102 ist praktisch fuer Tests."
+          },
+          "min": 1,
+          "max": 65535,
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "connectTimeoutMs": {
+          "type": "number",
+          "label": {
+            "en": "Connect timeout ms",
+            "de": "Verbindungs-Timeout ms"
+          },
+          "min": 1000,
+          "max": 120000,
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "reconnectDelayMs": {
+          "type": "number",
+          "label": {
+            "en": "Reconnect delay ms",
+            "de": "Reconnect-Verzoegerung ms"
+          },
+          "min": 1000,
+          "max": 3600000,
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        }
+      }
+    },
+    "association": {
+      "type": "panel",
+      "label": {
+        "en": "Association",
+        "de": "Association"
+      },
+      "items": {
+        "localApTitle": {
+          "type": "text",
+          "label": {
+            "en": "Local AP title",
+            "de": "Lokaler AP title"
+          },
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "remoteApTitle": {
+          "type": "text",
+          "label": {
+            "en": "Remote AP title",
+            "de": "Remote AP title"
+          },
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "localAeQualifier": {
+          "type": "text",
+          "label": {
+            "en": "Local AE qualifier",
+            "de": "Lokaler AE qualifier"
+          },
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "remoteAeQualifier": {
+          "type": "text",
+          "label": {
+            "en": "Remote AE qualifier",
+            "de": "Remote AE qualifier"
+          },
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "logicalDevice": {
+          "type": "text",
+          "label": {
+            "en": "Logical device",
+            "de": "Logical Device"
+          },
+          "help": {
+            "en": "Optional logical device name used for documentation and future MMS browsing.",
+            "de": "Optionaler Logical-Device-Name fuer Dokumentation und spaeteres MMS-Browsing."
+          },
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        }
+      }
+    },
+    "reports": {
+      "type": "panel",
+      "label": {
+        "en": "Reports",
+        "de": "Reports"
+      },
+      "items": {
+        "reports": {
+          "type": "table",
+          "label": {
+            "en": "Report control blocks",
+            "de": "Report Control Blocks"
+          },
+          "items": [
+            {
+              "type": "text",
+              "attr": "id",
+              "title": {
+                "en": "ID",
+                "de": "ID"
+              }
+            },
+            {
+              "type": "text",
+              "attr": "name",
+              "title": {
+                "en": "Name",
+                "de": "Name"
+              }
+            },
+            {
+              "type": "text",
+              "attr": "reference",
+              "title": {
+                "en": "Object reference",
+                "de": "Objektreferenz"
+              }
+            },
+            {
+              "type": "checkbox",
+              "attr": "enabled",
+              "title": {
+                "en": "Enabled",
+                "de": "Aktiv"
+              }
+            }
+          ],
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
+        }
+      }
+    },
+    "raw": {
+      "type": "panel",
+      "label": {
+        "en": "GOOSE / SV",
+        "de": "GOOSE / SV"
+      },
+      "items": {
+        "gooseInterface": {
+          "type": "text",
+          "label": {
+            "en": "GOOSE network interface",
+            "de": "GOOSE Netzwerkinterface"
+          },
+          "help": {
+            "en": "Example: eth0. Raw Ethernet support requires native backend support.",
+            "de": "Beispiel: eth0. Raw-Ethernet-Unterstuetzung benoetigt ein natives Backend."
+          },
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "gooseAppId": {
+          "type": "text",
+          "label": {
+            "en": "GOOSE AppID",
+            "de": "GOOSE AppID"
+          },
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "sampledValuesInterface": {
+          "type": "text",
+          "label": {
+            "en": "Sampled Values network interface",
+            "de": "Sampled Values Netzwerkinterface"
+          },
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "sampledValuesAppId": {
+          "type": "text",
+          "label": {
+            "en": "Sampled Values AppID",
+            "de": "Sampled Values AppID"
+          },
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        }
+      }
+    },
+    "points": {
+      "type": "panel",
+      "label": {
+        "en": "Data points",
+        "de": "Datenpunkte"
+      },
+      "items": {
+        "points": {
+          "type": "table",
+          "label": {
+            "en": "Manual IEC 61850 data points",
+            "de": "Manuelle IEC-61850-Datenpunkte"
+          },
+          "items": [
+            {
+              "type": "text",
+              "attr": "id",
+              "title": {
+                "en": "ID",
+                "de": "ID"
+              }
+            },
+            {
+              "type": "text",
+              "attr": "name",
+              "title": {
+                "en": "Name",
+                "de": "Name"
+              }
+            },
+            {
+              "type": "text",
+              "attr": "reference",
+              "title": {
+                "en": "IEC 61850 reference",
+                "de": "IEC-61850-Referenz"
+              }
+            },
+            {
+              "type": "select",
+              "attr": "type",
+              "title": {
+                "en": "Type",
+                "de": "Typ"
+              },
+              "options": [
+                {
+                  "label": "number",
+                  "value": "number"
+                },
+                {
+                  "label": "boolean",
+                  "value": "boolean"
+                },
+                {
+                  "label": "string",
+                  "value": "string"
+                }
+              ]
+            },
+            {
+              "type": "checkbox",
+              "attr": "write",
+              "title": {
+                "en": "Writable",
+                "de": "Schreibbar"
+              }
+            }
+          ],
+          "xs": 12,
+          "sm": 12,
+          "md": 12,
+          "lg": 12,
+          "xl": 12
+        }
+      }
+    }
+  }
+}

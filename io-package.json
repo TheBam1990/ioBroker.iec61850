@@ -1,0 +1,146 @@
+{
+  "common": {
+    "name": "iec61850",
+    "version": "0.1.2",
+    "news": {
+      "0.1.2": {
+        "en": "Replace service multiselect with checker-compatible service checkboxes.",
+        "de": "Ersetzt die Dienst-Mehrfachauswahl durch checker-kompatible Dienst-Checkboxen.",
+        "ru": "Replace service multiselect with checker-compatible service checkboxes.",
+        "pt": "Replace service multiselect with checker-compatible service checkboxes.",
+        "nl": "Replace service multiselect with checker-compatible service checkboxes.",
+        "fr": "Replace service multiselect with checker-compatible service checkboxes.",
+        "it": "Replace service multiselect with checker-compatible service checkboxes.",
+        "es": "Replace service multiselect with checker-compatible service checkboxes.",
+        "pl": "Replace service multiselect with checker-compatible service checkboxes.",
+        "uk": "Replace service multiselect with checker-compatible service checkboxes.",
+        "zh-cn": "Replace service multiselect with checker-compatible service checkboxes."
+      },
+      "0.1.1": {
+        "en": "Create info and diagnostic objects before writing startup states.",
+        "de": "Legt Info- und Diagnoseobjekte vor dem Schreiben der Startzustaende an.",
+        "ru": "Create info and diagnostic objects before writing startup states.",
+        "pt": "Create info and diagnostic objects before writing startup states.",
+        "nl": "Create info and diagnostic objects before writing startup states.",
+        "fr": "Create info and diagnostic objects before writing startup states.",
+        "it": "Create info and diagnostic objects before writing startup states.",
+        "es": "Create info and diagnostic objects before writing startup states.",
+        "pl": "Create info and diagnostic objects before writing startup states.",
+        "uk": "Create info and diagnostic objects before writing startup states.",
+        "zh-cn": "Create info and diagnostic objects before writing startup states."
+      },
+      "0.1.0": {
+        "en": "Initial IEC 61850 adapter foundation with client/server mode, MMS TCP diagnostics, report data points and guarded GOOSE/Sampled Values modes.",
+        "de": "Erster IEC-61850-Adapter mit Client-/Server-Modus, MMS-TCP-Diagnose, Report-Datenpunkten und abgesicherten GOOSE-/Sampled-Values-Modi.",
+        "ru": "Initial IEC 61850 adapter foundation with client/server mode, MMS TCP diagnostics, report data points and guarded GOOSE/Sampled Values modes.",
+        "pt": "Initial IEC 61850 adapter foundation with client/server mode, MMS TCP diagnostics, report data points and guarded GOOSE/Sampled Values modes.",
+        "nl": "Initial IEC 61850 adapter foundation with client/server mode, MMS TCP diagnostics, report data points and guarded GOOSE/Sampled Values modes.",
+        "fr": "Initial IEC 61850 adapter foundation with client/server mode, MMS TCP diagnostics, report data points and guarded GOOSE/Sampled Values modes.",
+        "it": "Initial IEC 61850 adapter foundation with client/server mode, MMS TCP diagnostics, report data points and guarded GOOSE/Sampled Values modes.",
+        "es": "Initial IEC 61850 adapter foundation with client/server mode, MMS TCP diagnostics, report data points and guarded GOOSE/Sampled Values modes.",
+        "pl": "Initial IEC 61850 adapter foundation with client/server mode, MMS TCP diagnostics, report data points and guarded GOOSE/Sampled Values modes.",
+        "uk": "Initial IEC 61850 adapter foundation with client/server mode, MMS TCP diagnostics, report data points and guarded GOOSE/Sampled Values modes.",
+        "zh-cn": "Initial IEC 61850 adapter foundation with client/server mode, MMS TCP diagnostics, report data points and guarded GOOSE/Sampled Values modes."
+      }
+    },
+    "titleLang": {
+      "en": "IEC 61850",
+      "de": "IEC 61850",
+      "ru": "IEC 61850",
+      "pt": "IEC 61850",
+      "nl": "IEC 61850",
+      "fr": "IEC 61850",
+      "it": "IEC 61850",
+      "es": "IEC 61850",
+      "pl": "IEC 61850",
+      "uk": "IEC 61850",
+      "zh-cn": "IEC 61850"
+    },
+    "desc": {
+      "en": "IEC 61850 adapter foundation for MMS client/server diagnostics, reports, GOOSE and Sampled Values integration.",
+      "de": "IEC-61850-Adaptergrundlage fuer MMS-Client-/Server-Diagnose, Reports, GOOSE und Sampled-Values-Integration.",
+      "ru": "IEC 61850 adapter foundation for MMS client/server diagnostics, reports, GOOSE and Sampled Values integration.",
+      "pt": "IEC 61850 adapter foundation for MMS client/server diagnostics, reports, GOOSE and Sampled Values integration.",
+      "nl": "IEC 61850 adapter foundation for MMS client/server diagnostics, reports, GOOSE and Sampled Values integration.",
+      "fr": "IEC 61850 adapter foundation for MMS client/server diagnostics, reports, GOOSE and Sampled Values integration.",
+      "it": "IEC 61850 adapter foundation for MMS client/server diagnostics, reports, GOOSE and Sampled Values integration.",
+      "es": "IEC 61850 adapter foundation for MMS client/server diagnostics, reports, GOOSE and Sampled Values integration.",
+      "pl": "IEC 61850 adapter foundation for MMS client/server diagnostics, reports, GOOSE and Sampled Values integration.",
+      "uk": "IEC 61850 adapter foundation for MMS client/server diagnostics, reports, GOOSE and Sampled Values integration.",
+      "zh-cn": "IEC 61850 adapter foundation for MMS client/server diagnostics, reports, GOOSE and Sampled Values integration."
+    },
+    "authors": [
+      "TheBam1990"
+    ],
+    "keywords": [
+      "iec61850",
+      "iec-61850",
+      "mms",
+      "goose",
+      "sampled-values",
+      "reports",
+      "substation"
+    ],
+    "licenseInformation": {
+      "type": "free",
+      "license": "MIT"
+    },
+    "platform": "Javascript/Node.js",
+    "icon": "iec61850.svg",
+    "enabled": true,
+    "extIcon": "https://raw.githubusercontent.com/TheBam1990/ioBroker.iec61850/main/admin/iec61850.svg",
+    "readme": "https://github.com/TheBam1990/ioBroker.iec61850/blob/main/README.md",
+    "loglevel": "info",
+    "mode": "daemon",
+    "type": "protocols",
+    "tier": 3,
+    "compact": true,
+    "connectionType": "local",
+    "dataSource": "push",
+    "adminUI": {
+      "config": "json"
+    },
+    "dependencies": [
+      {
+        "js-controller": ">=6.0.11"
+      }
+    ],
+    "globalDependencies": [
+      {
+        "admin": ">=7.6.20"
+      }
+    ]
+  },
+  "native": {
+    "enabled": false,
+    "role": "client",
+    "services": [
+      "mms",
+      "reports"
+    ],
+    "serviceMms": true,
+    "serviceReports": true,
+    "serviceGoose": false,
+    "serviceSampledValues": false,
+    "mmsHost": "192.168.2.200",
+    "mmsPort": 102,
+    "mmsBind": "0.0.0.0",
+    "mmsServerPort": 8102,
+    "connectTimeoutMs": 10000,
+    "reconnectDelayMs": 10000,
+    "pollIntervalMs": 30000,
+    "localApTitle": "",
+    "remoteApTitle": "",
+    "localAeQualifier": "",
+    "remoteAeQualifier": "",
+    "logicalDevice": "",
+    "reports": [],
+    "gooseInterface": "",
+    "gooseAppId": "",
+    "sampledValuesInterface": "",
+    "sampledValuesAppId": "",
+    "points": []
+  },
+  "objects": [],
+  "instanceObjects": []
+}
