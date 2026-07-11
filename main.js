@@ -1,6 +1,7 @@
 "use strict";
 
 const net = require("node:net");
+const { spawn } = require("node:child_process");
 const utils = require("@iobroker/adapter-core");
 
 const SERVICE = {
@@ -8,6 +9,27 @@ const SERVICE = {
     REPORTS: "reports",
     GOOSE: "goose",
     SAMPLED_VALUES: "sampled-values",
+};
+
+const RAW_SERVICE = {
+    goose: {
+        label: "GOOSE",
+        stateRoot: "goose",
+        etherType: 0x88b8,
+        interfaceKey: "gooseInterface",
+        appIdKey: "gooseAppId",
+        captureKey: "gooseCaptureEnabled",
+        publishKey: "goosePublishEnabled",
+    },
+    sampledValues: {
+        label: "Sampled Values",
+        stateRoot: "sampledValues",
+        etherType: 0x88ba,
+        interfaceKey: "sampledValuesInterface",
+        appIdKey: "sampledValuesAppId",
+        captureKey: "sampledValuesCaptureEnabled",
+        publishKey: "sampledValuesPublishEnabled",
+    },
 };
 
 function asArray(value) {
@@ -40,6 +62,61 @@ function valueType(type) {
     return "mixed";
 }
 
+function cleanHex(value) {
+    return String(value || "").replace(/[^a-fA-F0-9]/g, "").toLowerCase();
+}
+
+function formatMac(buffer, offset) {
+    return [...buffer.subarray(offset, offset + 6)].map(byte => byte.toString(16).padStart(2, "0")).join(":");
+}
+
+function parseIec61850RawFrame(frame) {
+    if (!Buffer.isBuffer(frame) || frame.length < 22) {
+        return null;
+    }
+
+    let etherTypeOffset = 12;
+    let etherType = frame.readUInt16BE(etherTypeOffset);
+    let vlan = null;
+    if (etherType === 0x8100 && frame.length >= 26) {
+        const tci = frame.readUInt16BE(14);
+        vlan = {
+            priority: (tci >> 13) & 0x07,
+            id: tci & 0x0fff,
+        };
+        etherTypeOffset = 16;
+        etherType = frame.readUInt16BE(etherTypeOffset);
+    }
+
+    if (etherType !== 0x88b8 && etherType !== 0x88ba) {
+        return null;
+    }
+
+    const headerOffset = etherTypeOffset + 2;
+    if (frame.length < headerOffset + 8) {
+        return null;
+    }
+
+    const appId = frame.readUInt16BE(headerOffset);
+    const declaredLength = frame.readUInt16BE(headerOffset + 2);
+    const reserved1 = frame.readUInt16BE(headerOffset + 4);
+    const reserved2 = frame.readUInt16BE(headerOffset + 6);
+    const payload = frame.subarray(headerOffset + 8);
+
+    return {
+        protocol: etherType === 0x88b8 ? "GOOSE" : "Sampled Values",
+        etherType,
+        destinationMac: formatMac(frame, 0),
+        sourceMac: formatMac(frame, 6),
+        vlan,
+        appId,
+        declaredLength,
+        reserved1,
+        reserved2,
+        payload,
+    };
+}
+
 class Iec61850Adapter extends utils.Adapter {
     constructor(options = {}) {
         super({
@@ -55,6 +132,7 @@ class Iec61850Adapter extends utils.Adapter {
         this.bytesTx = 0;
         this.clientConnected = false;
         this.serverConnections = new Set();
+        this.rawCaptures = new Map();
 
         this.on("ready", () => this.onReady());
         this.on("stateChange", (id, state) => this.onStateChange(id, state));
@@ -91,8 +169,12 @@ class Iec61850Adapter extends utils.Adapter {
         await this.setState("diagnostics.lastError", "", true);
         await this.setState("diagnostics.bytesRx", 0, true);
         await this.setState("diagnostics.bytesTx", 0, true);
+        await this.initializeRawStates("goose");
+        await this.initializeRawStates("sampledValues");
 
         this.subscribeStates("points.*.set");
+        this.subscribeStates("goose.publishFrameHex");
+        this.subscribeStates("sampledValues.publishFrameHex");
 
         if (!this.config.enabled) {
             await this.setState("diagnostics.status", "disabled", true);
@@ -116,15 +198,11 @@ class Iec61850Adapter extends utils.Adapter {
         }
 
         if (this.services.has(SERVICE.GOOSE)) {
-            await this.startRawEthernetService("goose", this.config.gooseInterface, this.config.gooseAppId);
+            await this.startRawEthernetService("goose");
         }
 
         if (this.services.has(SERVICE.SAMPLED_VALUES)) {
-            await this.startRawEthernetService(
-                "sampledValues",
-                this.config.sampledValuesInterface,
-                this.config.sampledValuesAppId,
-            );
+            await this.startRawEthernetService("sampledValues");
         }
 
         await this.updateConnectionState();
@@ -179,7 +257,25 @@ class Iec61850Adapter extends utils.Adapter {
         await this.ensureState("mms.serverConnections", "MMS server connections", "number", "value");
         await this.ensureState("reports.status", "Report status", "string", "state");
         await this.ensureState("goose.status", "GOOSE status", "string", "state");
+        await this.ensureState("goose.captureActive", "GOOSE capture active", "boolean", "indicator");
+        await this.ensureState("goose.frameCount", "GOOSE frame count", "number", "value");
+        await this.ensureState("goose.lastAppId", "GOOSE last AppID", "number", "value");
+        await this.ensureState("goose.lastSourceMac", "GOOSE last source MAC", "string", "state");
+        await this.ensureState("goose.lastDestinationMac", "GOOSE last destination MAC", "string", "state");
+        await this.ensureState("goose.lastPayloadHex", "GOOSE last payload hex", "string", "state");
+        await this.ensureState("goose.lastFrameHex", "GOOSE last frame hex", "string", "state");
+        await this.ensureState("goose.lastTimestamp", "GOOSE last timestamp", "string", "state");
+        await this.ensureState("goose.publishFrameHex", "GOOSE publish raw Ethernet frame hex", "string", "state");
         await this.ensureState("sampledValues.status", "Sampled Values status", "string", "state");
+        await this.ensureState("sampledValues.captureActive", "Sampled Values capture active", "boolean", "indicator");
+        await this.ensureState("sampledValues.frameCount", "Sampled Values frame count", "number", "value");
+        await this.ensureState("sampledValues.lastAppId", "Sampled Values last AppID", "number", "value");
+        await this.ensureState("sampledValues.lastSourceMac", "Sampled Values last source MAC", "string", "state");
+        await this.ensureState("sampledValues.lastDestinationMac", "Sampled Values last destination MAC", "string", "state");
+        await this.ensureState("sampledValues.lastPayloadHex", "Sampled Values last payload hex", "string", "state");
+        await this.ensureState("sampledValues.lastFrameHex", "Sampled Values last frame hex", "string", "state");
+        await this.ensureState("sampledValues.lastTimestamp", "Sampled Values last timestamp", "string", "state");
+        await this.ensureState("sampledValues.publishFrameHex", "Sampled Values publish raw Ethernet frame hex", "string", "state");
 
         const reports = asArray(this.config.reports);
         for (const [index, report] of reports.entries()) {
@@ -225,11 +321,25 @@ class Iec61850Adapter extends utils.Adapter {
                 type,
                 role,
                 read: true,
-                write: role === "switch" || id.endsWith(".set"),
+                write: role === "switch" || id.endsWith(".set") || id.endsWith(".publishFrameHex"),
                 unit,
             },
             native: {},
         });
+    }
+
+    async initializeRawStates(service) {
+        const root = RAW_SERVICE[service].stateRoot;
+        await this.setState(`${root}.status`, "idle", true);
+        await this.setState(`${root}.captureActive`, false, true);
+        await this.setState(`${root}.frameCount`, 0, true);
+        await this.setState(`${root}.lastAppId`, 0, true);
+        await this.setState(`${root}.lastSourceMac`, "", true);
+        await this.setState(`${root}.lastDestinationMac`, "", true);
+        await this.setState(`${root}.lastPayloadHex`, "", true);
+        await this.setState(`${root}.lastFrameHex`, "", true);
+        await this.setState(`${root}.lastTimestamp`, "", true);
+        await this.setState(`${root}.publishFrameHex`, "", true);
     }
 
     startMmsClient() {
@@ -312,12 +422,189 @@ class Iec61850Adapter extends utils.Adapter {
         this.log.debug(`IEC 61850 MMS ${source} frame: ${data.toString("hex")}`);
     }
 
-    async startRawEthernetService(service, iface, appId) {
-        const label = service === "goose" ? "GOOSE" : "Sampled Values";
-        const stateRoot = service === "goose" ? "goose" : "sampledValues";
-        const message = `${label} needs raw Ethernet access and a native IEC 61850 backend; configured interface=${iface || "not set"}, appId=${appId || "not set"}`;
-        this.log.warn(message);
-        await this.setState(`${stateRoot}.status`, message, true);
+    async startRawEthernetService(service) {
+        const definition = RAW_SERVICE[service];
+        const iface = String(this.config[definition.interfaceKey] || "").trim();
+        const appId = String(this.config[definition.appIdKey] || "").trim();
+
+        if (!iface) {
+            const message = `${definition.label} interface is not configured.`;
+            this.log.warn(message);
+            await this.setState(`${definition.stateRoot}.status`, message, true);
+            await this.setState(`${definition.stateRoot}.captureActive`, false, true);
+            return;
+        }
+
+        await this.setState(
+            `${definition.stateRoot}.status`,
+            `${definition.label} configured on ${iface}, appId=${appId || "any"}`,
+            true,
+        );
+
+        if (this.config[definition.captureKey] !== false) {
+            this.startRawCapture(service, definition, iface, appId);
+        }
+    }
+
+    startRawCapture(service, definition, iface, appId) {
+        if (this.rawCaptures.has(service)) {
+            return;
+        }
+
+        const filter = `ether proto 0x${definition.etherType.toString(16)}`;
+        const args = ["-n", "-l", "-e", "-xx", "-s", "0", "-i", iface, filter];
+        const proc = spawn("tcpdump", args, { stdio: ["ignore", "pipe", "pipe"] });
+        const capture = {
+            proc,
+            frameCount: 0,
+            lineBuffer: "",
+            hexWords: [],
+            packetActive: false,
+            service,
+            definition,
+            appId,
+        };
+        this.rawCaptures.set(service, capture);
+
+        proc.stdout.on("data", chunk => this.handleTcpdumpOutput(capture, chunk.toString("utf8")));
+        proc.stderr.on("data", chunk => {
+            const text = chunk.toString("utf8").trim();
+            if (text) {
+                this.log.warn(`${definition.label} capture: ${text}`);
+            }
+        });
+        proc.on("error", error => {
+            this.setRawCaptureStatus(capture, `capture error: ${error.message}`, false).catch(err =>
+                this.log.warn(`Could not update ${definition.label} status: ${err.message}`),
+            );
+        });
+        proc.on("exit", (code, signal) => {
+            this.rawCaptures.delete(service);
+            this.setRawCaptureStatus(capture, `capture stopped code=${code} signal=${signal || ""}`.trim(), false).catch(
+                error => this.log.warn(`Could not update ${definition.label} status: ${error.message}`),
+            );
+        });
+
+        this.setRawCaptureStatus(capture, `capture running on ${iface}`, true).catch(error =>
+            this.log.warn(`Could not update ${definition.label} status: ${error.message}`),
+        );
+    }
+
+    handleTcpdumpOutput(capture, text) {
+        capture.lineBuffer += text;
+        const lines = capture.lineBuffer.split(/\r?\n/);
+        capture.lineBuffer = lines.pop() || "";
+
+        for (const line of lines) {
+            const hexLine = line.match(/^\s*0x[0-9a-fA-F]+:\s+(.+)$/);
+            if (hexLine) {
+                capture.packetActive = true;
+                const words = hexLine[1].match(/\b(?:[0-9a-fA-F]{4}|[0-9a-fA-F]{2})\b/g) || [];
+                capture.hexWords.push(...words);
+                continue;
+            }
+
+            if (capture.packetActive && capture.hexWords.length) {
+                this.finishRawPacket(capture).catch(error =>
+                    this.log.warn(`Could not process ${capture.definition.label} frame: ${error.message}`),
+                );
+            }
+            capture.packetActive = false;
+            capture.hexWords = [];
+        }
+    }
+
+    async finishRawPacket(capture) {
+        const hex = cleanHex(capture.hexWords.join(""));
+        capture.hexWords = [];
+        capture.packetActive = false;
+        if (!hex || hex.length < 44) {
+            return;
+        }
+
+        const frame = Buffer.from(hex, "hex");
+        const parsed = parseIec61850RawFrame(frame);
+        if (!parsed || parsed.etherType !== capture.definition.etherType) {
+            return;
+        }
+
+        if (capture.appId) {
+            const expected = Number.parseInt(cleanHex(capture.appId), 16);
+            if (Number.isFinite(expected) && parsed.appId !== expected) {
+                return;
+            }
+        }
+
+        capture.frameCount += 1;
+        this.bytesRx += frame.length;
+        const root = capture.definition.stateRoot;
+        await this.setState(`${root}.frameCount`, capture.frameCount, true);
+        await this.setState(`${root}.lastAppId`, parsed.appId, true);
+        await this.setState(`${root}.lastSourceMac`, parsed.sourceMac, true);
+        await this.setState(`${root}.lastDestinationMac`, parsed.destinationMac, true);
+        await this.setState(`${root}.lastPayloadHex`, parsed.payload.toString("hex"), true);
+        await this.setState(`${root}.lastFrameHex`, frame.toString("hex"), true);
+        await this.setState(`${root}.lastTimestamp`, new Date().toISOString(), true);
+        await this.setState("diagnostics.bytesRx", this.bytesRx, true);
+        await this.setState("diagnostics.lastFrameHex", frame.toString("hex").slice(0, 512), true);
+        await this.setState("diagnostics.status", `${root}-frame-received`, true);
+    }
+
+    async setRawCaptureStatus(capture, status, active) {
+        await this.setState(`${capture.definition.stateRoot}.status`, status, true);
+        await this.setState(`${capture.definition.stateRoot}.captureActive`, active, true);
+        await this.updateConnectionState();
+    }
+
+    async publishRawFrame(service, frameHex) {
+        const definition = RAW_SERVICE[service];
+        const iface = String(this.config[definition.interfaceKey] || "").trim();
+        const hex = cleanHex(frameHex);
+        if (!this.config[definition.publishKey]) {
+            throw new Error(`${definition.label} publishing is disabled in the adapter configuration.`);
+        }
+        if (!iface) {
+            throw new Error(`${definition.label} interface is not configured.`);
+        }
+        if (hex.length < 44 || hex.length % 2 !== 0) {
+            throw new Error(`${definition.label} frame hex is invalid or too short.`);
+        }
+        const parsed = parseIec61850RawFrame(Buffer.from(hex, "hex"));
+        if (!parsed || parsed.etherType !== definition.etherType) {
+            throw new Error(`${definition.label} frame does not contain EtherType 0x${definition.etherType.toString(16)}.`);
+        }
+
+        await this.sendRawFrame(iface, hex);
+        this.bytesTx += hex.length / 2;
+        await this.setState("diagnostics.bytesTx", this.bytesTx, true);
+        await this.setState(`${definition.stateRoot}.status`, `published raw frame on ${iface}`, true);
+    }
+
+    sendRawFrame(iface, hex) {
+        return new Promise((resolve, reject) => {
+            const script = [
+                "import socket,sys",
+                "iface=sys.argv[1]",
+                "data=bytes.fromhex(sys.argv[2])",
+                "s=socket.socket(socket.AF_PACKET,socket.SOCK_RAW)",
+                "s.bind((iface,0))",
+                "s.send(data)",
+                "s.close()",
+            ].join("; ");
+            const proc = spawn("python3", ["-c", script, iface, hex], { stdio: ["ignore", "ignore", "pipe"] });
+            let stderr = "";
+            proc.stderr.on("data", chunk => {
+                stderr += chunk.toString("utf8");
+            });
+            proc.on("error", reject);
+            proc.on("exit", code => {
+                if (code === 0) {
+                    resolve();
+                } else {
+                    reject(new Error(stderr.trim() || `python3 raw socket sender exited with code ${code}`));
+                }
+            });
+        });
     }
 
     scheduleReconnect() {
@@ -347,7 +634,8 @@ class Iec61850Adapter extends utils.Adapter {
         const connected =
             this.clientConnected ||
             this.serverConnections.size > 0 ||
-            (!!this.server && (this.role === "server" || this.role === "both"));
+            (!!this.server && (this.role === "server" || this.role === "both")) ||
+            this.rawCaptures.size > 0;
         await this.setState("info.connection", connected, true);
         await this.setState("mms.clientConnected", this.clientConnected, true);
         await this.setState("mms.serverConnections", this.serverConnections.size, true);
@@ -361,7 +649,21 @@ class Iec61850Adapter extends utils.Adapter {
     }
 
     async onStateChange(id, state) {
-        if (!state || state.ack || !id.endsWith(".set")) {
+        if (!state || state.ack) {
+            return;
+        }
+        if (id.endsWith(".publishFrameHex")) {
+            const localId = id.replace(`${this.namespace}.`, "");
+            const service = localId.startsWith("goose.") ? "goose" : "sampledValues";
+            try {
+                await this.publishRawFrame(service, state.val);
+                await this.setState(localId, state.val, true);
+            } catch (error) {
+                await this.setError(error.message);
+            }
+            return;
+        }
+        if (!id.endsWith(".set")) {
             return;
         }
         const localId = id.replace(`${this.namespace}.`, "");
@@ -388,6 +690,10 @@ class Iec61850Adapter extends utils.Adapter {
                 socket.destroy();
             }
             this.serverConnections.clear();
+            for (const capture of this.rawCaptures.values()) {
+                capture.proc.kill("SIGTERM");
+            }
+            this.rawCaptures.clear();
             if (this.server) {
                 this.server.close();
                 this.server = null;

@@ -1,7 +1,7 @@
 {
   "name": "iobroker.iec61850",
-  "version": "0.1.2",
-  "description": "ioBroker adapter foundation for IEC 61850 MMS, GOOSE, Sampled Values and reports",
+  "version": "0.2.1",
+  "description": "ioBroker adapter for IEC 61850 MMS, GOOSE, Sampled Values and reports",
   "author": "TheBam1990",
   "homepage": "https://github.com/TheBam1990/ioBroker.iec61850",
   "license": "MIT",

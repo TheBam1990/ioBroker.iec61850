@@ -1,21 +1,22 @@
 # ioBroker IEC 61850
 
-ioBroker adapter foundation for IEC 61850 communication with selectable client/server mode, MMS TCP diagnostics, report data points and guarded GOOSE/Sampled Values configuration.
+ioBroker adapter for IEC 61850 communication with selectable client/server mode, MMS TCP diagnostics, report data points, GOOSE raw Ethernet capture/publish and Sampled Values raw Ethernet capture/publish.
 
 German documentation is available here: [README.de.md](README.de.md).
 
 ## Current scope
 
-This first test version is built to install cleanly in ioBroker and provide a structured IEC 61850 adapter base. It contains:
+This test version is built to install cleanly in ioBroker and provide a structured IEC 61850 adapter base. It contains:
 
 - Client, server or combined role selection.
 - MMS TCP client connection to an IEC 61850 device, normally TCP port `102`.
 - MMS TCP server listener for lab tests, default port `8102`.
 - Report Control Block configuration and ioBroker report states.
 - Manual IEC 61850 data point mapping.
-- GOOSE and Sampled Values configuration with clear diagnostics.
+- GOOSE and Sampled Values raw Ethernet receive support through `tcpdump`.
+- GOOSE and Sampled Values raw frame publishing through a raw socket helper.
 
-Full IEC 61850 MMS object browsing, ASN.1 MMS service decoding, GOOSE publishing/subscribing and Sampled Values decoding require a native IEC 61850 backend such as libIEC61850 or an equivalent system component. This adapter version prepares the ioBroker side and exposes safe diagnostics until that backend is added.
+Full IEC 61850 MMS object browsing and ASN.1 decoding of every MMS/GOOSE/SV payload still require a native IEC 61850 backend such as libIEC61850 or an equivalent system component. The adapter already captures and publishes real Ethernet frames for GOOSE and Sampled Values, and exposes the parsed IEC 61850 frame header plus payload hex in ioBroker.
 
 ## Requirements
 
@@ -23,7 +24,8 @@ Full IEC 61850 MMS object browsing, ASN.1 MMS service decoding, GOOSE publishing
 - Node.js 22 or newer.
 - For MMS client mode: TCP access to the IED or gateway.
 - For real MMS server mode on TCP `102`: permission to bind privileged ports, or use a test port such as `8102`.
-- For GOOSE and Sampled Values: Linux raw Ethernet access, correct network interface and later a native IEC 61850 backend.
+- For GOOSE and Sampled Values receive: Linux host with `tcpdump` installed and permission to capture on the selected interface.
+- For GOOSE and Sampled Values publish: `python3` and raw socket permission, usually root or `CAP_NET_RAW`.
 
 ## Configuration
 
@@ -96,12 +98,47 @@ Writes are buffered into the ioBroker value state in this first version. A later
 
 GOOSE and Sampled Values do not use TCP/IP sockets. They use Ethernet frames directly. For this reason a pure JavaScript adapter cannot fully implement them without native raw Ethernet access.
 
-This adapter currently validates the configuration and writes a diagnostic status below:
+This adapter uses `tcpdump` for receiving raw Ethernet frames:
+
+- GOOSE EtherType: `0x88b8`
+- Sampled Values EtherType: `0x88ba`
+
+Configure the Linux network interface, for example `eth0`, and optionally an AppID filter. The AppID value is interpreted as hexadecimal, for example `1000` or `4000`.
+
+Received frames are exposed below:
 
 ```text
 iec61850.0.goose.status
+iec61850.0.goose.captureActive
+iec61850.0.goose.frameCount
+iec61850.0.goose.lastAppId
+iec61850.0.goose.lastSourceMac
+iec61850.0.goose.lastDestinationMac
+iec61850.0.goose.lastPayloadHex
+iec61850.0.goose.lastFrameHex
+iec61850.0.goose.lastTimestamp
 iec61850.0.sampledValues.status
+iec61850.0.sampledValues.captureActive
+iec61850.0.sampledValues.frameCount
+iec61850.0.sampledValues.lastAppId
+iec61850.0.sampledValues.lastSourceMac
+iec61850.0.sampledValues.lastDestinationMac
+iec61850.0.sampledValues.lastPayloadHex
+iec61850.0.sampledValues.lastFrameHex
+iec61850.0.sampledValues.lastTimestamp
 ```
+
+Raw publishing is intentionally disabled by default. To send a frame:
+
+1. Enable `Allow GOOSE raw publishing` or `Allow Sampled Values raw publishing`.
+2. Write a complete Ethernet frame as hex string to:
+
+```text
+iec61850.0.goose.publishFrameHex
+iec61850.0.sampledValues.publishFrameHex
+```
+
+The hex string must include destination MAC, source MAC, optional VLAN tag, EtherType, APPID, length, reserved fields and the IEC 61850 payload.
 
 ## States
 
@@ -133,11 +170,31 @@ iec61850.0.mms.serverConnections
 
 TCP ports below `1024` are privileged on Linux. Use port `8102` for tests or grant the needed capability to the Node.js runtime on the target host.
 
-### GOOSE or Sampled Values stay in diagnostic mode
+### GOOSE or Sampled Values do not capture frames
 
-That is expected for this first version. The adapter needs a native raw Ethernet backend before those services can decode or publish real Ethernet frames.
+- Install `tcpdump`.
+- Check the interface name, for example `ip link`.
+- Start ioBroker with permission to run packet capture, or grant the required capability to `tcpdump`.
+- Make sure the switch port receives the multicast frames. Some managed switches need multicast or mirror configuration.
+
+### Raw publishing fails
+
+- Check that publishing is enabled in the adapter configuration.
+- Check that `python3` is installed.
+- Check that the ioBroker process has raw socket permission.
+- Verify that the frame contains the correct EtherType: `0x88b8` for GOOSE or `0x88ba` for Sampled Values.
 
 ## Changelog
+
+### 0.2.1
+
+- Initialize GOOSE and Sampled Values states even when the adapter function is disabled.
+
+### 0.2.0
+
+- Add raw Ethernet receive support for GOOSE and Sampled Values.
+- Add parsed raw frame header states and payload hex states.
+- Add raw frame publishing through writeable `publishFrameHex` states.
 
 ### 0.1.2
 

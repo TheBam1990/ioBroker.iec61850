@@ -372,6 +372,42 @@
             "en": "GOOSE AppID",
             "de": "GOOSE AppID"
           },
+          "help": {
+            "en": "Optional hexadecimal AppID filter, for example 1000. Leave empty to accept all GOOSE frames.",
+            "de": "Optionaler hexadezimaler AppID-Filter, z.B. 1000. Leer lassen, um alle GOOSE-Frames zu akzeptieren."
+          },
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "gooseCaptureEnabled": {
+          "type": "checkbox",
+          "label": {
+            "en": "Capture GOOSE frames",
+            "de": "GOOSE-Frames empfangen"
+          },
+          "help": {
+            "en": "Starts tcpdump for EtherType 0x88b8 on the selected interface.",
+            "de": "Startet tcpdump fuer EtherType 0x88b8 auf dem ausgewaehlten Interface."
+          },
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "goosePublishEnabled": {
+          "type": "checkbox",
+          "label": {
+            "en": "Allow GOOSE raw publishing",
+            "de": "GOOSE Raw-Senden erlauben"
+          },
+          "help": {
+            "en": "Allows writes to goose.publishFrameHex. Requires raw socket permission on the host.",
+            "de": "Erlaubt Schreibzugriffe auf goose.publishFrameHex. Benoetigt Raw-Socket-Berechtigung auf dem Host."
+          },
           "xs": 12,
           "sm": 6,
           "md": 6,
@@ -395,6 +431,42 @@
           "label": {
             "en": "Sampled Values AppID",
             "de": "Sampled Values AppID"
+          },
+          "help": {
+            "en": "Optional hexadecimal AppID filter, for example 4000. Leave empty to accept all Sampled Values frames.",
+            "de": "Optionaler hexadezimaler AppID-Filter, z.B. 4000. Leer lassen, um alle Sampled-Values-Frames zu akzeptieren."
+          },
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "sampledValuesCaptureEnabled": {
+          "type": "checkbox",
+          "label": {
+            "en": "Capture Sampled Values frames",
+            "de": "Sampled-Values-Frames empfangen"
+          },
+          "help": {
+            "en": "Starts tcpdump for EtherType 0x88ba on the selected interface.",
+            "de": "Startet tcpdump fuer EtherType 0x88ba auf dem ausgewaehlten Interface."
+          },
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "sampledValuesPublishEnabled": {
+          "type": "checkbox",
+          "label": {
+            "en": "Allow Sampled Values raw publishing",
+            "de": "Sampled Values Raw-Senden erlauben"
+          },
+          "help": {
+            "en": "Allows writes to sampledValues.publishFrameHex. Requires raw socket permission on the host.",
+            "de": "Erlaubt Schreibzugriffe auf sampledValues.publishFrameHex. Benoetigt Raw-Socket-Berechtigung auf dem Host."
           },
           "xs": 12,
           "sm": 6,
