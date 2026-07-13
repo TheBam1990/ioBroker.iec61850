@@ -1,10 +1,10 @@
 {
   "name": "iobroker.iec61850",
-  "version": "0.2.1",
+  "version": "0.3.4",
   "description": "ioBroker adapter for IEC 61850 MMS, GOOSE, Sampled Values and reports",
   "author": "TheBam1990",
   "homepage": "https://github.com/TheBam1990/ioBroker.iec61850",
-  "license": "MIT",
+  "license": "GPL-3.0-only",
   "main": "main.js",
   "files": [
     "admin",
@@ -12,7 +12,8 @@
     "LICENSE",
     "main.js",
     "README.md",
-    "README.de.md"
+    "README.de.md",
+    "vendor"
   ],
   "os": [
     "linux",
@@ -57,6 +58,7 @@
     "lint": "node --check main.js",
     "test:package": "mocha test/package --exit",
     "test:integration": "mocha test/integration --exit",
+    "install": "npm install --omit=dev --prefix vendor/ih-libiec61850-node",
     "release": "release-script"
   },
   "bugs": {

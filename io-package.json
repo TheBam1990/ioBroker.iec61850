@@ -1,8 +1,73 @@
 {
   "common": {
     "name": "iec61850",
-    "version": "0.2.1",
+    "version": "0.3.4",
     "news": {
+      "0.3.4": {
+        "en": "Fix native MMS startup with the synchronous connection API.",
+        "de": "Start des nativen MMS-Backends mit synchroner Verbindungs-API korrigiert.",
+        "ru": "Fix native MMS startup with the synchronous connection API.",
+        "pt": "Fix native MMS startup with the synchronous connection API.",
+        "nl": "Fix native MMS startup with the synchronous connection API.",
+        "fr": "Fix native MMS startup with the synchronous connection API.",
+        "it": "Fix native MMS startup with the synchronous connection API.",
+        "es": "Fix native MMS startup with the synchronous connection API.",
+        "pl": "Fix native MMS startup with the synchronous connection API.",
+        "uk": "Fix native MMS startup with the synchronous connection API.",
+        "zh-cn": "Fix native MMS startup with the synchronous connection API."
+      },
+      "0.3.3": {
+        "en": "Run the native MMS backend in a dedicated process for reliable model browsing.",
+        "de": "Natives MMS-Backend für zuverlässiges Modell-Browsing in einem eigenen Prozess ausführen.",
+        "ru": "Run the native MMS backend in a dedicated process for reliable model browsing.",
+        "pt": "Run the native MMS backend in a dedicated process for reliable model browsing.",
+        "nl": "Run the native MMS backend in a dedicated process for reliable model browsing.",
+        "fr": "Run the native MMS backend in a dedicated process for reliable model browsing.",
+        "it": "Run the native MMS backend in a dedicated process for reliable model browsing.",
+        "es": "Run the native MMS backend in a dedicated process for reliable model browsing.",
+        "pl": "Run the native MMS backend in a dedicated process for reliable model browsing.",
+        "uk": "Run the native MMS backend in a dedicated process for reliable model browsing.",
+        "zh-cn": "Run the native MMS backend in a dedicated process for reliable model browsing."
+      },
+      "0.3.2": {
+        "en": "Build the bundled MMS backend without a local file dependency to support ioBroker updates.",
+        "de": "Gebündeltes MMS-Backend ohne lokale Dateiabhängigkeit bauen, damit ioBroker-Updates funktionieren.",
+        "ru": "Build the bundled MMS backend without a local file dependency to support ioBroker updates.",
+        "pt": "Build the bundled MMS backend without a local file dependency to support ioBroker updates.",
+        "nl": "Build the bundled MMS backend without a local file dependency to support ioBroker updates.",
+        "fr": "Build the bundled MMS backend without a local file dependency to support ioBroker updates.",
+        "it": "Build the bundled MMS backend without a local file dependency to support ioBroker updates.",
+        "es": "Build the bundled MMS backend without a local file dependency to support ioBroker updates.",
+        "pl": "Build the bundled MMS backend without a local file dependency to support ioBroker updates.",
+        "uk": "Build the bundled MMS backend without a local file dependency to support ioBroker updates.",
+        "zh-cn": "Build the bundled MMS backend without a local file dependency to support ioBroker updates."
+      },
+      "0.3.1": {
+        "en": "Load the locally built MMS backend directly on ioBroker installations.",
+        "de": "Lokal gebautes MMS-Backend in ioBroker-Installationen direkt laden.",
+        "ru": "Load the locally built MMS backend directly on ioBroker installations.",
+        "pt": "Load the locally built MMS backend directly on ioBroker installations.",
+        "nl": "Load the locally built MMS backend directly on ioBroker installations.",
+        "fr": "Load the locally built MMS backend directly on ioBroker installations.",
+        "it": "Load the locally built MMS backend directly on ioBroker installations.",
+        "es": "Load the locally built MMS backend directly on ioBroker installations.",
+        "pl": "Load the locally built MMS backend directly on ioBroker installations.",
+        "uk": "Load the locally built MMS backend directly on ioBroker installations.",
+        "zh-cn": "Load the locally built MMS backend directly on ioBroker installations."
+      },
+      "0.3.0": {
+        "en": "Add native MMS model browsing, automatic data point discovery and cyclic dataset polling.",
+        "de": "Natives MMS-Modell-Browsing, automatische Datenpunkterkennung und zyklische Dataset-Abfrage ergänzt.",
+        "ru": "Add native MMS model browsing, automatic data point discovery and cyclic dataset polling.",
+        "pt": "Add native MMS model browsing, automatic data point discovery and cyclic dataset polling.",
+        "nl": "Add native MMS model browsing, automatic data point discovery and cyclic dataset polling.",
+        "fr": "Add native MMS model browsing, automatic data point discovery and cyclic dataset polling.",
+        "it": "Add native MMS model browsing, automatic data point discovery and cyclic dataset polling.",
+        "es": "Add native MMS model browsing, automatic data point discovery and cyclic dataset polling.",
+        "pl": "Add native MMS model browsing, automatic data point discovery and cyclic dataset polling.",
+        "uk": "Add native MMS model browsing, automatic data point discovery and cyclic dataset polling.",
+        "zh-cn": "Add native MMS model browsing, automatic data point discovery and cyclic dataset polling."
+      },
       "0.2.1": {
         "en": "Initialize GOOSE and Sampled Values states even when the adapter function is disabled.",
         "de": "Initialisiert GOOSE- und Sampled-Values-States auch bei deaktivierter Adapterfunktion.",
@@ -109,7 +174,7 @@
     ],
     "licenseInformation": {
       "type": "free",
-      "license": "MIT"
+      "license": "GPL-3.0-only"
     },
     "platform": "Javascript/Node.js",
     "icon": "iec61850.svg",
@@ -120,7 +185,7 @@
     "mode": "daemon",
     "type": "protocols",
     "tier": 3,
-    "compact": true,
+    "compact": false,
     "connectionType": "local",
     "dataSource": "push",
     "adminUI": {
@@ -155,6 +220,7 @@
     "connectTimeoutMs": 10000,
     "reconnectDelayMs": 10000,
     "pollIntervalMs": 30000,
+    "autoBrowse": true,
     "localApTitle": "",
     "remoteApTitle": "",
     "localAeQualifier": "",

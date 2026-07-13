@@ -1,0 +1,16 @@
+{
+  "name": "@amigo9090/ih-libiec61850-node",
+  "version": "1.0.73-iobroker.1",
+  "description": "IEC 61850 native addon source with fixed Node 22 build",
+  "main": "index.js",
+  "license": "GPL-3.0-only",
+  "gypfile": true,
+  "scripts": {
+    "install": "node-gyp rebuild"
+  },
+  "dependencies": {
+    "node-addon-api": "^7.1.1"
+  },
+  "os": ["linux"],
+  "cpu": ["x64"]
+}

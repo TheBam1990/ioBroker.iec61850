@@ -1,0 +1,1 @@
+cmd_Release/addon_iec61850.node := ln -f "Release/obj.target/addon_iec61850.node" "Release/addon_iec61850.node" 2>/dev/null || (rm -rf "Release/addon_iec61850.node" && cp -af "Release/obj.target/addon_iec61850.node" "Release/addon_iec61850.node")

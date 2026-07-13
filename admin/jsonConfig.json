@@ -105,11 +105,27 @@
         "pollIntervalMs": {
           "type": "number",
           "label": {
-            "en": "Status interval ms",
-            "de": "Statusintervall ms"
+            "en": "MMS polling interval ms",
+            "de": "MMS-Abfrageintervall ms"
           },
           "min": 1000,
           "max": 3600000,
+          "xs": 12,
+          "sm": 6,
+          "md": 6,
+          "lg": 6,
+          "xl": 6
+        },
+        "autoBrowse": {
+          "type": "checkbox",
+          "label": {
+            "en": "Automatically browse and load MMS data points",
+            "de": "MMS-Datenpunkte automatisch suchen und laden"
+          },
+          "help": {
+            "en": "Discovers logical nodes, datasets, reports and values after connecting and creates ioBroker objects below mms.data.",
+            "de": "Ermittelt nach dem Verbinden Logical Nodes, Datasets, Reports und Werte und legt ioBroker-Objekte unter mms.data an."
+          },
           "xs": 12,
           "sm": 6,
           "md": 6,

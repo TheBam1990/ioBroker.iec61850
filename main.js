@@ -4,6 +4,17 @@ const net = require("node:net");
 const { spawn } = require("node:child_process");
 const utils = require("@iobroker/adapter-core");
 
+let MmsClient;
+try {
+    ({ MmsClient } = require("@amigo9090/ih-libiec61850-node"));
+} catch {
+    try {
+        ({ MmsClient } = require("./vendor/ih-libiec61850-node"));
+    } catch {
+        MmsClient = null;
+    }
+}
+
 const SERVICE = {
     MMS: "mms",
     REPORTS: "reports",
@@ -60,6 +71,32 @@ function valueType(type) {
         return type;
     }
     return "mixed";
+}
+
+function normalizeMmsValue(value) {
+    if (value === null || value === undefined || ["boolean", "number", "string"].includes(typeof value)) {
+        return value;
+    }
+    if (Array.isArray(value)) {
+        return JSON.stringify(value);
+    }
+    if (typeof value === "object") {
+        const keys = Object.keys(value);
+        if (keys.length === 1 && ["i", "u", "f", "value", "stVal", "mag"].includes(keys[0])) {
+            return normalizeMmsValue(value[keys[0]]);
+        }
+        return JSON.stringify(value);
+    }
+    return String(value);
+}
+
+function mmsStateId(reference) {
+    return String(reference)
+        .replace(/\[[A-Z]+]/gi, "")
+        .replace(/[/$]/g, ".")
+        .replace(/[^a-zA-Z0-9_.-]/g, "_")
+        .replace(/\.{2,}/g, ".")
+        .replace(/^\.|\.$/g, "");
 }
 
 function cleanHex(value) {
@@ -133,6 +170,9 @@ class Iec61850Adapter extends utils.Adapter {
         this.clientConnected = false;
         this.serverConnections = new Set();
         this.rawCaptures = new Map();
+        this.mmsDatasets = [];
+        this.mmsPollTimer = null;
+        this.nativeMms = false;
 
         this.on("ready", () => this.onReady());
         this.on("stateChange", (id, state) => this.onStateChange(id, state));
@@ -255,6 +295,10 @@ class Iec61850Adapter extends utils.Adapter {
         await this.ensureState("diagnostics.lastFrameHex", "Last frame hex", "string", "state");
         await this.ensureState("mms.clientConnected", "MMS client connected", "boolean", "indicator.connected");
         await this.ensureState("mms.serverConnections", "MMS server connections", "number", "value");
+        await this.ensureState("mms.modelStatus", "MMS model status", "string", "state");
+        await this.ensureState("mms.logicalNodes", "Discovered logical nodes", "number", "value");
+        await this.ensureState("mms.datasets", "Discovered datasets", "number", "value");
+        await this.ensureState("mms.dataPoints", "Discovered data points", "number", "value");
         await this.ensureState("reports.status", "Report status", "string", "state");
         await this.ensureState("goose.status", "GOOSE status", "string", "state");
         await this.ensureState("goose.captureActive", "GOOSE capture active", "boolean", "indicator");
@@ -352,6 +396,11 @@ class Iec61850Adapter extends utils.Adapter {
             return;
         }
 
+        if (MmsClient && this.config.autoBrowse !== false) {
+            this.startNativeMmsClient(host, port);
+            return;
+        }
+
         this.log.info(`Connecting IEC 61850 MMS TCP client to ${host}:${port}`);
         const socket = net.createConnection({ host, port });
         this.client = socket;
@@ -378,6 +427,145 @@ class Iec61850Adapter extends utils.Adapter {
             await this.updateConnectionState();
             this.scheduleReconnect();
         });
+    }
+
+    startNativeMmsClient(host, port) {
+        this.nativeMms = true;
+        this.log.info(`Connecting native IEC 61850 MMS client to ${host}:${port}`);
+        const clientId = `${this.namespace}_${Date.now()}`;
+        const client = new MmsClient((event, data) => {
+            this.handleNativeMmsEvent(event, data).catch(error => this.setError(`MMS event error: ${error.message}`));
+        });
+        this.client = client;
+        try {
+            client.connect({
+                ip: host,
+                port,
+                clientID: clientId,
+                reconnectDelay: Math.max(1, Math.round((Number(this.config.reconnectDelayMs) || 10000) / 1000)),
+            });
+        } catch (error) {
+            this.setError(`Native MMS connection error: ${error.message}`);
+        }
+    }
+
+    async handleNativeMmsEvent(event, data) {
+        if (event === "conn" && data?.event === "opened") {
+            this.clientConnected = true;
+            await this.setState("mms.clientConnected", true, true);
+            await this.setState("diagnostics.status", "mms-browsing-model", true);
+            await this.updateConnectionState();
+            await this.browseMmsModel();
+            return;
+        }
+        if (event === "conn" && ["closed", "reconnecting", "failed"].includes(data?.event)) {
+            this.clientConnected = false;
+            await this.setState("mms.clientConnected", false, true);
+            await this.updateConnectionState();
+            if (data?.reason) {
+                await this.setError(`Native MMS ${data.event}: ${data.reason}`);
+            }
+            return;
+        }
+        if (event === "data" && data?.type === "error") {
+            await this.setError(`Native MMS error: ${data.reason || "unknown error"}`);
+            return;
+        }
+        if (event === "data" && data?.type === "data" && data.event === "report") {
+            await this.setState("reports.status", `received ${data.rcbRef || "report"}`, true);
+            await this.pollMmsDatasets();
+        }
+    }
+
+    async browseMmsModel() {
+        if (!this.client || typeof this.client.browseDataModel !== "function") {
+            return;
+        }
+        await this.setState("mms.modelStatus", "browsing", true);
+        const model = await this.client.browseDataModel();
+        const logicalNodes = Array.isArray(model) ? model : [];
+        const datasets = logicalNodes.flatMap(node => (node.dataSets || []).map(dataset => ({ ...dataset, node })));
+        const reports = logicalNodes.flatMap(node => (node.reports || []).map(report => ({ ...report, node })));
+        this.mmsDatasets = datasets.map(dataset => dataset.reference).filter(Boolean);
+
+        await this.setState("mms.logicalNodes", logicalNodes.length, true);
+        await this.setState("mms.datasets", this.mmsDatasets.length, true);
+
+        let pointCount = 0;
+        for (const dataset of datasets) {
+            const result = await this.client.readDataSetModel([dataset.reference]);
+            for (const entry of result || []) {
+                if (!entry?.isValid) {
+                    this.log.warn(`Could not read MMS dataset ${dataset.reference}: ${entry?.errorReason || "invalid"}`);
+                    continue;
+                }
+                for (const [reference, value] of Object.entries(entry.values || {})) {
+                    await this.createMmsDataPoint(reference, value, dataset.reference);
+                    pointCount++;
+                }
+            }
+        }
+
+        for (const report of reports) {
+            await this.createDiscoveredReport(report);
+        }
+
+        await this.setState("mms.dataPoints", pointCount, true);
+        await this.setState("mms.modelStatus", `ready: ${pointCount} points`, true);
+        await this.setState("diagnostics.status", "mms-model-ready", true);
+        await this.pollMmsDatasets();
+        this.startMmsPolling();
+        this.log.info(
+            `MMS model loaded: ${logicalNodes.length} logical nodes, ${datasets.length} datasets, ${pointCount} data points`,
+        );
+    }
+
+    async createMmsDataPoint(reference, rawValue, datasetReference) {
+        const id = `mms.data.${mmsStateId(reference)}`;
+        const value = normalizeMmsValue(rawValue);
+        const type = ["boolean", "number", "string"].includes(typeof value) ? typeof value : "mixed";
+        await this.setObjectNotExistsAsync(id, {
+            type: "state",
+            common: { name: reference, type, role: "state", read: true, write: false },
+            native: { reference, datasetReference },
+        });
+        await this.setState(id, value, true);
+    }
+
+    async createDiscoveredReport(report) {
+        const id = `mms.reports.${mmsStateId(report.reference)}`;
+        await this.setObjectNotExistsAsync(id, {
+            type: "state",
+            common: { name: report.reference, type: "string", role: "state", read: true, write: false },
+            native: { reference: report.reference, type: report.type, description: report.description },
+        });
+        await this.setState(id, report.description || report.type || "discovered", true);
+    }
+
+    startMmsPolling() {
+        if (this.mmsPollTimer) {
+            clearInterval(this.mmsPollTimer);
+        }
+        const interval = Math.max(1000, Number(this.config.pollIntervalMs) || 30000);
+        this.mmsPollTimer = setInterval(() => {
+            this.pollMmsDatasets().catch(error => this.setError(`MMS polling error: ${error.message}`));
+        }, interval);
+    }
+
+    async pollMmsDatasets() {
+        if (!this.clientConnected || !this.client || !this.mmsDatasets.length) {
+            return;
+        }
+        const results = await this.client.pollDataSetValues(this.mmsDatasets);
+        for (const result of results || []) {
+            if (!result?.isValid) {
+                this.log.warn(`MMS dataset polling failed for ${result?.datasetRef}: ${result?.errorReason || "invalid"}`);
+                continue;
+            }
+            for (const [reference, rawValue] of Object.entries(result.values || {})) {
+                await this.createMmsDataPoint(reference, rawValue, result.datasetRef);
+            }
+        }
     }
 
     startMmsServer() {
@@ -682,8 +870,16 @@ class Iec61850Adapter extends utils.Adapter {
                 clearInterval(this.statusTimer);
                 this.statusTimer = null;
             }
+            if (this.mmsPollTimer) {
+                clearInterval(this.mmsPollTimer);
+                this.mmsPollTimer = null;
+            }
             if (this.client) {
-                this.client.destroy();
+                if (this.nativeMms && typeof this.client.close === "function") {
+                    this.client.close().catch(() => {});
+                } else if (typeof this.client.destroy === "function") {
+                    this.client.destroy();
+                }
                 this.client = null;
             }
             for (const socket of this.serverConnections) {

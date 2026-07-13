@@ -9,14 +9,14 @@ German documentation is available here: [README.de.md](README.de.md).
 This test version is built to install cleanly in ioBroker and provide a structured IEC 61850 adapter base. It contains:
 
 - Client, server or combined role selection.
-- MMS TCP client connection to an IEC 61850 device, normally TCP port `102`.
+- Native MMS client connection with automatic model browsing and cyclic dataset polling.
 - MMS TCP server listener for lab tests, default port `8102`.
 - Report Control Block configuration and ioBroker report states.
-- Manual IEC 61850 data point mapping.
+- Automatic and manual IEC 61850 data point mapping.
 - GOOSE and Sampled Values raw Ethernet receive support through `tcpdump`.
 - GOOSE and Sampled Values raw frame publishing through a raw socket helper.
 
-Full IEC 61850 MMS object browsing and ASN.1 decoding of every MMS/GOOSE/SV payload still require a native IEC 61850 backend such as libIEC61850 or an equivalent system component. The adapter already captures and publishes real Ethernet frames for GOOSE and Sampled Values, and exposes the parsed IEC 61850 frame header plus payload hex in ioBroker.
+The bundled native MMS backend discovers logical nodes, datasets, report control blocks and dataset members. Discovered values are created automatically below `mms.data` and refreshed with the configured polling interval.
 
 ## Requirements
 
@@ -76,6 +76,14 @@ IED1LD0/LLN0.RP.Events
 ```
 
 ### Data points
+
+With automatic MMS browsing enabled, discovered values are created below:
+
+```text
+iec61850.0.mms.data.<logical-device>.<logical-node>.<data-object>.<attribute>
+```
+
+The states `mms.logicalNodes`, `mms.datasets`, `mms.dataPoints` and `mms.modelStatus` show the discovery result.
 
 Manual data points create states below:
 
@@ -185,6 +193,28 @@ TCP ports below `1024` are privileged on Linux. Use port `8102` for tests or gra
 - Verify that the frame contains the correct EtherType: `0x88b8` for GOOSE or `0x88ba` for Sampled Values.
 
 ## Changelog
+
+### 0.3.4
+
+- Fix startup of the native MMS connection API.
+
+### 0.3.3
+
+- Run the thread-based native MMS backend in a dedicated adapter process.
+
+### 0.3.2
+
+- Build the bundled native MMS backend reliably during ioBroker installation and updates.
+
+### 0.3.1
+
+- Load the locally compiled MMS backend directly on ioBroker installations.
+
+### 0.3.0
+
+- Add native MMS associations and automatic data-model browsing.
+- Create discovered dataset members automatically as ioBroker states.
+- Poll dataset values cyclically and expose discovered report control blocks.
 
 ### 0.2.1
 

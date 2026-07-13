@@ -184,6 +184,28 @@ TCP-Ports unter `1024` sind unter Linux privilegiert. Fuer Tests Port `8102` nut
 
 ## Changelog
 
+### 0.3.4
+
+- Start der nativen MMS-Verbindungs-API korrigiert.
+
+### 0.3.3
+
+- Threadbasiertes natives MMS-Backend in einem eigenen Adapterprozess ausführen.
+
+### 0.3.2
+
+- Gebündeltes natives MMS-Backend bei ioBroker-Installation und Updates zuverlässig bauen.
+
+### 0.3.1
+
+- Lokal kompiliertes MMS-Backend in ioBroker-Installationen direkt laden.
+
+### 0.3.0
+
+- Native MMS-Verbindungen und automatisches Datenmodell-Browsing ergänzt.
+- Gefundene Dataset-Mitglieder automatisch als ioBroker-States angelegt.
+- Zyklische Dataset-Abfrage und Anzeige gefundener Report Control Blocks ergänzt.
+
 ### 0.2.1
 
 - GOOSE- und Sampled-Values-States werden auch bei deaktivierter Adapterfunktion initialisiert.
